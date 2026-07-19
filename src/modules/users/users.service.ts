@@ -1,11 +1,104 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { RegisterDTO } from '../auth/dto/register.dto';
+// import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtService } from '@nestjs/jwt';
+import bcrypt from 'bcrypt';
+import { LoginDTO } from '../auth/dto/login.dto';
+import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(
+    @InjectModel(User.name)
+    readonly userModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  getAllUser(registerData: RegisterDTO) {
+    console.log('register data is', registerData);
+    return `these are the all uers`;
+  }
+  async create(registerData: RegisterDTO) {
+    const {
+      email,
+      name,
+      phone,
+      role,
+      address,
+      password,
+      securityAnswers,
+      securityQuestion,
+    } = registerData;
+
+    const userExists = await this.userModel.exists({ email });
+
+    if (userExists) {
+      throw new ConflictException('User already exists');
+    }
+
+    const slotround = 10;
+    const [passwordHash, securityAnswerHash] = await Promise.all([
+      bcrypt.hash(password, slotround),
+      bcrypt.hash(securityAnswers, slotround),
+    ]);
+
+    console.log('userExists', userExists);
+    console.log('passwordHash', passwordHash);
+    console.log('securityAnswerHash', securityAnswerHash);
+
+    await this.userModel.create({
+      name,
+      email,
+      address,
+      phone,
+      password: passwordHash,
+      securityQuestion,
+      securityAnswerHash,
+      role,
+    });
+
+    return {
+      message: 'User registered successfully',
+    };
+  }
+
+  async login(loginData: LoginDTO) {
+    const { email, password } = loginData;
+
+    const userInfo = await this.userModel.findOne({ email });
+
+    if (!userInfo) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const compairPassword = await bcrypt.compare(password, userInfo?.password);
+
+    if (!compairPassword) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+    const payload = {
+      _id: userInfo._id,
+      email: userInfo.email,
+      role: userInfo.role,
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+
+    return {
+      accessToken: token,
+      user: {
+        id: userInfo._id,
+        name: userInfo.name,
+        email: userInfo.email,
+        role: userInfo.role,
+      },
+    };
   }
 
   findAll() {
@@ -14,10 +107,6 @@ export class UsersService {
 
   findOne(id: number) {
     return `This action returns a #${id} user`;
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
   }
 
   remove(id: number) {
