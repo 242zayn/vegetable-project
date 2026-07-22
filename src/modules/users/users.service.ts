@@ -10,7 +10,7 @@ import { RegisterDTO } from '../auth/dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
 import { LoginDTO } from '../auth/dto/login.dto';
-import { User, UserDocument } from './schema/user.schema';
+import { User, UserDocument, UserRole } from './schema/user.schema';
 
 @Injectable()
 export class UsersService {
@@ -20,10 +20,6 @@ export class UsersService {
     private readonly jwtService: JwtService,
   ) {}
 
-  getAllUser(registerData: RegisterDTO) {
-    console.log('register data is', registerData);
-    return `these are the all uers`;
-  }
   async create(registerData: RegisterDTO) {
     const {
       email,
@@ -37,6 +33,10 @@ export class UsersService {
     } = registerData;
 
     const userExists = await this.userModel.exists({ email });
+
+    if (role == UserRole.ADMIN) {
+      throw new ConflictException('You can not crete admin user direct');
+    }
 
     if (userExists) {
       throw new ConflictException('User already exists');
@@ -101,15 +101,14 @@ export class UsersService {
     };
   }
 
-  findAll() {
-    return `This action returns all users`;
+  getMe(email: string) {
+    return this.userModel
+      .findOne({ email })
+      .select('-password -securityQuestion -securityAnswerHash')
+      .lean()
+      .exec();
   }
-
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  getAllUser() {
+    return this.userModel.find({}).lean().exec();
   }
 }

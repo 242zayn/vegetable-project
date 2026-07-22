@@ -1,11 +1,32 @@
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Product, ProductDocuments } from './schema/product.schema';
 
 @Injectable()
 export class ProductsService {
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  constructor(
+    @InjectModel(Product.name)
+    readonly productModel: Model<ProductDocuments>,
+  ) {}
+  async create(createProductDto: CreateProductDto) {
+    const { name } = createProductDto;
+
+    const isProductExist = await this.productModel.findOne({ name });
+
+    if (isProductExist) {
+      throw new BadGatewayException(
+        'Product name is alredy exist make some unique',
+      );
+    }
+
+    await this.productModel.create(createProductDto);
+
+    return {
+      message: 'Product cerated Sesssfully',
+    };
   }
 
   findAll() {

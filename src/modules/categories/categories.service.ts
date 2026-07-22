@@ -1,11 +1,42 @@
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import {
+  ProductCategory,
+  ProductCategoryDocuments,
+} from './schema/category.schema';
 
 @Injectable()
 export class CategoriesService {
-  create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
+  constructor(
+    @InjectModel(ProductCategory.name)
+    private readonly categoryModel: Model<ProductCategoryDocuments>,
+  ) {}
+
+  async create(createCategoryDto: CreateCategoryDto) {
+    const { name, slug, description, imageUrl, isActive } = createCategoryDto;
+    const isCategoryExist = await this.categoryModel.findOne({ name });
+
+    if (isCategoryExist) {
+      throw new BadGatewayException(
+        'Category name alredy exist choose some thing unique',
+      );
+    }
+
+    await this.categoryModel.create({
+      name,
+      slug,
+      description,
+      imageUrl,
+      isActive,
+    });
+
+    // return await this.categoryModel.create(createCategoryDto);
+    return {
+      message: ' Category created seccesfully',
+    };
   }
 
   findAll() {

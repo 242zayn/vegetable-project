@@ -1,32 +1,45 @@
-import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  Request,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { Roles } from 'src/common/decorators/roles/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles/roles.guard';
+import { UserRole } from './schema/user.schema';
 import { UsersService } from './users.service';
+export interface JwtPayload {
+  sub: string | number;
+  email: string;
+  role: UserRole;
+}
+export interface AuthenticatedRequest extends Request {
+  user?: JwtPayload;
+}
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create() {
-    return `fkldlkjfjd`;
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CUSTOMER)
+  @Get('me')
+  getMe(@Req() req: AuthenticatedRequest) {
+    console.log('reqest ', req.user);
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+
+    return this.usersService.getMe(req.user?.email);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-  //   // return this.usersService.update(+id, updateUserDto);
-  // }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('all')
+  getAllUsers() {
+    return this.usersService.getAllUser();
   }
 }
