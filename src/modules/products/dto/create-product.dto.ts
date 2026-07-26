@@ -1,4 +1,12 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+} from 'class-validator';
 
 export class CreateProductDto {
   @IsNotEmpty()
@@ -24,4 +32,9 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsMongoId({ each: true })
+  categoryIds!: string[];
 }
