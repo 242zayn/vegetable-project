@@ -23,14 +23,8 @@ export class ProductsService {
     readonly productCategoryservices: CategoriesService,
   ) {}
   async create(createProductDto: CreateProductDto) {
-    const { name, slug, categoryIds } = createProductDto;
-
-    // Duplicate category IDs
-    const uniqueCategoryIds = [...new Set(categoryIds)];
-
-    if (uniqueCategoryIds.length !== categoryIds.length) {
-      throw new BadRequestException('Duplicate category IDs are not allowed');
-    }
+    const { name, slug, categoryId } = createProductDto;
+    console.log(createProductDto);
 
     // Product name or slug already exists
     const existingProduct = await this.productModel.findOne({
@@ -40,20 +34,22 @@ export class ProductsService {
     if (existingProduct) {
       throw new ConflictException('Product name or slug already exists');
     }
+    console.log('categoryId', categoryId);
 
-    // Check category existence
-    const categories = await this.categoryModel.find({
-      _id: { $in: uniqueCategoryIds },
+    const isCategory = await this.categoryModel.exists({
+      _id: categoryId,
     });
 
-    if (categories.length !== uniqueCategoryIds.length) {
-      throw new BadRequestException('One or more category IDs are invalid');
+    if (!isCategory) {
+      throw new BadRequestException('Invalid category ID');
     }
+
+    console.log('isCategory', isCategory);
 
     // Create product
     const product = await this.productModel.create({
       ...createProductDto,
-      categoryIds: uniqueCategoryIds,
+      // categoryId: categoryId,
     });
 
     return {
@@ -62,8 +58,21 @@ export class ProductsService {
     };
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll() {
+    const res = await this.productModel.aggregate([
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+    ]);
+    return {
+      message: 'succesfyll feched data',
+      data: res,
+    };
   }
 
   findOne(id: number) {

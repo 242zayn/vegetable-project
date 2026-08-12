@@ -12,7 +12,6 @@ import {
   ProductCategory,
   ProductCategorySchema,
 } from './modules/categories/schema/category.schema';
-import { CategoryModule } from './modules/category/category.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ProductsModule } from './modules/products/products.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
@@ -54,7 +53,6 @@ import { VisitsModule } from './modules/visits/visits.module';
     CartModule,
     OrdersModule,
     AdminModule,
-    CategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

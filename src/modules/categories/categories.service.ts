@@ -16,6 +16,9 @@ export class CategoriesService {
 
   async create(createCategoryDto: CreateCategoryDto) {
     const { name, slug, description, imageUrl, isActive } = createCategoryDto;
+    if (!name) {
+      throw new BadGatewayException('dfdsjfkdjf');
+    }
     const isCategoryExist = await this.categoryModel.findOne({ name });
 
     if (isCategoryExist) {

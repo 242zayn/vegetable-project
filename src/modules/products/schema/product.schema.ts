@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Document, HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 
 export type ProductDocuments = HydratedDocument<Product>;
 
 @Schema({ timestamps: true, collection: 'product' })
-export class Product extends Document {
-  @Prop({ required: true, unique: true })
+export class Product {
+  @Prop({ required: true, unique: true, trim: true })
   name!: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true, unique: true, trim: true })
   slug!: string;
 
   @Prop()
@@ -24,9 +24,10 @@ export class Product extends Document {
   isActive!: boolean;
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'categories' }],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'categories',
   })
-  categoryIds?: mongoose.Types.ObjectId[];
+  categoryId?: mongoose.Types.ObjectId;
 }
 
 export const productSchema = SchemaFactory.createForClass(Product);
