@@ -2,7 +2,6 @@ import { BadGatewayException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
 import {
   ProductCategory,
   ProductCategoryDocuments,
@@ -17,6 +16,9 @@ export class CategoriesService {
 
   async create(createCategoryDto: CreateCategoryDto) {
     const { name, slug, description, imageUrl, isActive } = createCategoryDto;
+    if (!name) {
+      throw new BadGatewayException('dfdsjfkdjf');
+    }
     const isCategoryExist = await this.categoryModel.findOne({ name });
 
     if (isCategoryExist) {
@@ -39,17 +41,23 @@ export class CategoriesService {
     };
   }
 
+  async findByIds(ids: string[]) {
+    return this.categoryModel.find({
+      _id: { $in: ids },
+    });
+  }
+
   findAll() {
-    return `This action returns all categories`;
+    return this.categoryModel.find({});
   }
 
   findOne(id: number) {
     return `This action returns a #${id} category`;
   }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
-  }
+  // update(id: number, updateCategoryDto: UpdateCategoryDto) {
+  //   return `This action updates a #${id} category`;
+  // }
 
   remove(id: number) {
     return `This action removes a #${id} category`;
