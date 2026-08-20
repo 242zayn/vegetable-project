@@ -9,13 +9,11 @@ import { ROLES_KEY } from 'src/common/decorators/roles/roles.decorator';
 import { UserRole } from 'src/modules/users/schema/user.schema';
 import { AuthenticatedRequest } from 'src/modules/users/users.controller';
 
-
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],

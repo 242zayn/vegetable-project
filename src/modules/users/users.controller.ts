@@ -24,8 +24,9 @@ export interface AuthenticatedRequest extends Request {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.CUSTOMER)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
+  // @Roles(UserRole.CUSTOMER)
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
     console.log('reqest ', req.user);
