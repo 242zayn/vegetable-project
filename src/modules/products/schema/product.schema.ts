@@ -23,6 +23,9 @@ export class Product {
   @Prop()
   isActive!: boolean;
 
+  @Prop({ default: null })
+  deleteAt?: null | Date;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'categories',

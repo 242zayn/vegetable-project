@@ -78,11 +78,12 @@ export class UsersService {
   async login(loginData: LoginDTO) {
     const { email, password } = loginData;
 
-    const userInfo = await this.userModel
-      .findOne({ email })
-      .select('-password -securityQuestion -securityAnswerHash')
-      .lean()
-      .exec();
+    const userInfo = await this.userModel.findOne({ email });
+    // .select('-password -securityQuestion -securityAnswerHash')
+    // .lean()
+    // .exec();
+
+    console.log('userInfo', userInfo);
 
     if (!userInfo) {
       throw new UnauthorizedException('Invalid email or password');

@@ -2,16 +2,23 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CategoriesService } from '../categories/categories.service';
 import {
   ProductCategory,
   ProductCategoryDocuments,
 } from '../categories/schema/category.schema';
 import { CreateProductDto } from './dto/create-product.dto';
+import { PaginationQueryDto } from './dto/pagination.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { Product, ProductDocuments } from './schema/product.schema';
+interface MatchStage {
+  $or?: Array<{ [key: string]: any }>;
+  [key: string]: any;
+}
 
 @Injectable()
 export class ProductsService {
@@ -24,7 +31,6 @@ export class ProductsService {
   ) {}
   async create(createProductDto: CreateProductDto) {
     const { name, slug, categoryId } = createProductDto;
-    console.log(createProductDto);
 
     // Product name or slug already exists
     const existingProduct = await this.productModel.findOne({
@@ -34,7 +40,6 @@ export class ProductsService {
     if (existingProduct) {
       throw new ConflictException('Product name or slug already exists');
     }
-    console.log('categoryId', categoryId);
 
     const isCategory = await this.categoryModel.exists({
       _id: categoryId,
@@ -43,8 +48,6 @@ export class ProductsService {
     if (!isCategory) {
       throw new BadRequestException('Invalid category ID');
     }
-
-    console.log('isCategory', isCategory);
 
     // Create product
     const product = await this.productModel.create({
@@ -58,7 +61,18 @@ export class ProductsService {
     };
   }
 
-  async findAll() {
+  async findAll(query: PaginationQueryDto) {
+    const { limit, page, search } = query;
+    const skip = (page - 1) * limit;
+    const total = await this.productModel.countDocuments();
+    const matchStage: MatchStage = {};
+    if (search) {
+      matchStage.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { slug: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
     const res = await this.productModel.aggregate([
       {
         $lookup: {
@@ -68,22 +82,115 @@ export class ProductsService {
           as: 'categories',
         },
       },
+      {
+        $unwind: '$categories',
+      },
+      {
+        $project: {
+          __v: 0,
+        },
+      },
+      {
+        $match: matchStage,
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
     ]);
     return {
-      message: 'succesfyll feched data',
+      message: 'successfully fetched datasssssssss',
       data: res,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: string) {
+    const product = await this.productModel.aggregate([
+      // stage 1 match
+      {
+        $match: { _id: new Types.ObjectId(id) },
+      },
+      // populate category data
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'categoryDeteils',
+        },
+      },
+      { $unwind: '$categoryDeteils' },
+      // Project the feild
+      {
+        $project: {
+          categoryId: 0,
+          __v: 0,
+          'categoryDeteils.__v': 0,
+        },
+      },
+    ]);
+    return product[0] as ProductDocuments;
+    // return this.productModel.findById(id);
   }
 
-  // update(id: number, updateProductDto: UpdateProductDto) {
-  //   return `This action updates a #${id} product`;
-  // }
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.productModel.findByIdAndUpdate(
+      id,
+      updateProductDto,
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
+  }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    const product = await this.productModel.findByIdAndUpdate(
+      id,
+      {
+        deleteAt: new Date(),
+      },
+      {
+        new: true,
+      },
+    );
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    if (product.deleteAt == null) {
+      throw new NotFoundException('Product alredy deleted');
+    }
+    return {
+      message: 'Product deletd sussesfully ',
+      data: product,
+    };
+  }
+
+  async restore(id: string) {
+    const product = await this.productModel.findByIdAndUpdate(id, {
+      updateAt: null,
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    if (product.deleteAt !== null) {
+      throw new NotFoundException('Product alredy restored');
+    }
+    return {
+      message: 'Product sussesfully restored',
+      data: product,
+    };
   }
 }

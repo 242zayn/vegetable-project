@@ -16,19 +16,19 @@ export class CreateProductDto {
   @IsString()
   slug!: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   description?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   imageUrl?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   displayOrder?: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 

@@ -6,8 +6,10 @@ import {
   Post,
   Req,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
@@ -28,6 +30,7 @@ export class AuthController {
 
   @Post('login')
   login(@Body() loginData: LoginDTO) {
+    console.log(loginData);
     return this.authService.login(loginData);
   }
   @Post('get-security-question')
@@ -41,6 +44,7 @@ export class AuthController {
     return this.authService.security_question_verify(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('reset-password')
   resetPassword(
     @Req() req: Request,
